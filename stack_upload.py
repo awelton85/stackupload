@@ -14,8 +14,8 @@ SEARCH_WORDS = {"limestone", "granite", "stone", "kasota", "coldspring"}
 def search_and_highlight_page(args: tuple) -> None:
     page, words = args
     print(
-        f"\nSearching page {page.number} of {len(fitz_document)}, {page.number / len(fitz_document) * 100:.2f}% complete"
-    )
+        f"\nSearching page {page.number} of {len(fitz_document)}, "
+        f"{page.number / len(fitz_document) * 100:.2f}% complete")
     for word in words:
         text_instances = page.search_for(word)
         for inst in text_instances:
@@ -27,8 +27,7 @@ def get_input_pdf_path() -> str:
     return filedialog.askopenfilename(
         initialdir="~/Downloads",
         title="Select A File",
-        filetypes=(("pdf files", "*.pdf"), ("all files", "*.*")),
-    )
+        filetypes=(("pdf files", "*.pdf"), ("all files", "*.*")))
 
 
 # create a fitz.Document object
@@ -51,9 +50,7 @@ def save_marked_pdf(document: fitz.Document, marked_pdf_filename: str) -> None:
 # open stack, log in, create new project, and upload marked PDF to new project
 def upload_to_stackct(output_path: str) -> None:
     print("Starting upload to StackCT...")
-    job_name = output_path.split("/")[
-        -2
-    ]  # sets job name to the name of the folder containing the PDF
+    job_name = output_path.split("/")[-2]  # sets job name to the name of the folder containing the PDF
 
     def run(pw: Playwright) -> None:
         browser = pw.chromium.launch(headless=True)
@@ -61,9 +58,8 @@ def upload_to_stackct(output_path: str) -> None:
         page = context.new_page()
         page.goto("https://www.stackct.com/")
         page.get_by_role("button", name="Sign In").first.click()
-        page.get_by_role("paragraph").filter(
-            has_text=re.compile(r"^Takeoff & Estimating$")
-        ).get_by_role("link", name="Takeoff & Estimating").click()
+        page.get_by_role("paragraph").filter(has_text=re.compile(r"^Takeoff & Estimating$")).\
+            get_by_role("link", name="Takeoff & Estimating").click()
         page.get_by_label("Business Email").click()
         page.get_by_label("Business Email").fill(env.EMAIL)
         page.get_by_role("button", name="Continue").click()

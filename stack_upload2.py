@@ -8,8 +8,6 @@ from datetime import datetime
 from playwright.sync_api import Playwright, sync_playwright
 
 SEARCH_WORDS = {"limestone", "granite", "stone", "kasota", "coldspring"}
-
-
 # SEARCH_WORDS = {"limestone", "granite", "stone", "kasota", "brick", "st1", "st-1", "st2", "st-2", "coldspring"}
 
 
@@ -31,8 +29,7 @@ def get_input_pdf_path() -> str:
     return filedialog.askopenfilename(
         initialdir="~/Downloads",
         title="Select A File",
-        filetypes=(("pdf files", "*.pdf"), ("all files", "*.*")),
-    )
+        filetypes=(("pdf files", "*.pdf"), ("all files", "*.*")))
 
 
 # create a fitz.Document object
@@ -58,14 +55,13 @@ def upload_to_stackct(start, finish, output_path: str) -> None:
     job_name = output_path.split("/")[-2]  # sets job name to the name of the folder containing the PDF
 
     def run(pw: Playwright) -> None:
-        browser = pw.chromium.launch(headless=False)
+        browser = pw.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
         page.goto("https://www.stackct.com/")
         page.get_by_role("button", name="Sign In").first.click()
-        page.get_by_role("paragraph").filter(
-            has_text=re.compile(r"^Takeoff & Estimating$")
-        ).get_by_role("link", name="Takeoff & Estimating").click()
+        page.get_by_role("paragraph").filter(has_text=re.compile(r"^Takeoff & Estimating$")).\
+            get_by_role("link", name="Takeoff & Estimating").click()
         page.get_by_label("Business Email").click()
         page.get_by_label("Business Email").fill(env.EMAIL)
         page.get_by_role("button", name="Continue").click()
