@@ -42,7 +42,7 @@ def create_fitz_document(fitz_filepath: str) -> fitz.Document:
 # save marked PDF to output PDF path
 def save_marked_pdf(document: fitz.Document, marked_pdf_filename: str) -> None:
     print("\nSaving PDF..")
-    document.save(marked_pdf_filename, garbage=3, deflate=False, clean=False)
+    document.save(marked_pdf_filename, garbage=4, deflate=True, clean=True)
     document.close()
     print("Finished saving marked PDF")
 
@@ -77,7 +77,7 @@ def upload_to_stackct(output_path: str) -> None:
             file_chooser.set_files(output_path)
             page.get_by_role("button", name="Done").click()
         print("Waiting for upload to complete...")
-        time.sleep(30)
+        time.sleep(20)
 
     with sync_playwright() as playwright:
         run(playwright)

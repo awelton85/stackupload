@@ -4,9 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pymupdf = "*"
-playwright = "*"
+pymupdf = "1.22.3"
+playwright = "1.33.0"
 
 [dev-packages]
 
 [requires]
+python_version = "3.10"
+

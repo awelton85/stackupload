@@ -44,7 +44,7 @@ def create_fitz_document(fitz_filepath: str) -> fitz.Document:
 # save marked PDF to output PDF path
 def save_marked_pdf(document: fitz.Document, marked_pdf_filename: str) -> None:
     print("\nSaving PDF...")
-    document.save(marked_pdf_filename, garbage=3, deflate=False, clean=False)
+    document.save(marked_pdf_filename, garbage=4, deflate=True, clean=True)
     document.close()
     print("Finished saving marked PDF")
 
