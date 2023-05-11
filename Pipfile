@@ -10,5 +10,3 @@ playwright = "*"
 [dev-packages]
 
 [requires]
-
-
