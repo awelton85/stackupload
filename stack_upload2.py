@@ -1,25 +1,29 @@
 import fitz
-import concurrent.futures
 import re
 import env
 import time
+import threading
 from tkinter import filedialog
 from datetime import datetime
 from playwright.sync_api import Playwright, sync_playwright
 
 SEARCH_WORDS = {"limestone", "granite", "stone", "kasota", "coldspring"}
+
+
 # SEARCH_WORDS = {"limestone", "granite", "stone", "kasota", "brick", "st1", "st-1", "st2", "st-2", "coldspring"}
 
 
-def search_and_highlight_page(args: tuple) -> None:
-    page, words = args
-    print(
-        f"\nSearching page {page.number} of {len(fitz_document)}, {page.number / len(fitz_document) * 100:.2f}% complete"
-    )
-    for word in words:
-        text_instances = page.search_for(word)
-        for inst in text_instances:
-            page.add_highlight_annot(inst)
+def search_and_highlight_page(start, finish, wordlist: set, document: fitz.Document) -> None:
+    start.wait()
+    for page in document:
+        print(f"\nSearching page {page.number} of {len(fitz_document)}, "
+              f"{page.number / len(fitz_document) * 100:.2f}% complete")
+        for word in wordlist:
+            text_instances = page.search_for(word)
+            for inst in text_instances:
+                page.add_highlight_annot(inst)
+    save_marked_pdf(fitz_document, marked_filepath)
+    finish.set()
 
 
 # get input PDF path from user
@@ -42,21 +46,19 @@ def create_fitz_document(fitz_filepath: str) -> fitz.Document:
 
 # save marked PDF to output PDF path
 def save_marked_pdf(document: fitz.Document, marked_pdf_filename: str) -> None:
-    print("\nSaving PDF..")
+    print("\nSaving PDF...")
     document.save(marked_pdf_filename, garbage=4, deflate=True, clean=True)
     document.close()
     print("Finished saving marked PDF")
 
 
 # open stack, log in, create new project, and upload marked PDF to new project
-def upload_to_stackct(output_path: str) -> None:
-    print("Starting upload to StackCT...")
-    job_name = output_path.split("/")[
-        -2
-    ]  # sets job name to the name of the folder containing the PDF
+def upload_to_stackct(start, finish, output_path: str) -> None:
+    start.set()
+    job_name = output_path.split("/")[-2]  # sets job name to the name of the folder containing the PDF
 
     def run(pw: Playwright) -> None:
-        browser = pw.chromium.launch(headless=True)
+        browser = pw.chromium.launch(headless=False)
         context = browser.new_context()
         page = context.new_page()
         page.goto("https://www.stackct.com/")
@@ -75,6 +77,8 @@ def upload_to_stackct(output_path: str) -> None:
         page.get_by_label("Project Name:").fill(job_name)
         page.get_by_role("button", name="Create and Launch").click()
         page.get_by_role("button", name="Local Files").click()
+        print("\nStarting upload...")
+        finish.wait()
         with page.expect_file_chooser() as fc:
             page.get_by_role("button", name="Choose a local file").click()
             file_chooser = fc.value
@@ -93,21 +97,21 @@ def upload_to_stackct(output_path: str) -> None:
 if __name__ == "__main__":
     original_file_path = get_input_pdf_path()  # get input PDF path from user
     start_time = datetime.now()  # start performance timer
-    marked_filepath = original_file_path[:-4] + "_marked.pdf"  # create output PDF filepath
+    marked_filepath = (original_file_path[:-4] + "_marked.pdf")  # create output PDF filepath
     fitz_document = create_fitz_document(original_file_path)  # create fitz.Document object from input PDF
 
-    # searches and highlights all pages of PDF for words in SEARCH_WORDS using multithreading
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(
-            search_and_highlight_page, [(page, SEARCH_WORDS) for page in fitz_document]
-        )
+    # search and highlight all pages of PDF for words in SEARCH_WORDS using multithreading
+    start_event = threading.Event()
+    finish_event = threading.Event()
+    thread2 = threading.Thread(target=upload_to_stackct,
+                               args=(start_event, finish_event, marked_filepath))
+    thread1 = threading.Thread(target=search_and_highlight_page,
+                               args=(start_event, finish_event, SEARCH_WORDS, fitz_document))
 
-    save_marked_pdf(fitz_document, marked_filepath)  # save marked PDF to output PDF path
-    end_time1 = datetime.now()  # end performance timer for writing PDF
-    print(f"Search/write duration: {end_time1 - start_time}\n")
+    thread2.start()
+    thread1.start()
 
-    upload_to_stackct(marked_filepath)  # uploads marked PDF to StackCT as a new project
-    end_time2 = datetime.now()  # end performance timer for uploading PDF
+    thread1.join()
+    thread2.join()
 
-    print(f"Upload duration: {end_time2 - end_time1}")
-    print(f"Total duration: {end_time2 - start_time}")
+    print(f"\nTotal duration: {datetime.now() - start_time}")
